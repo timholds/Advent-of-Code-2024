@@ -10,8 +10,8 @@
 # read in the data from data/data2.txt
 import numpy as np
 import pandas as pd
-df = pd.read_csv('data/data2.txt', header=None)
-
+df = pd.read_csv('data/test_data2.txt', header=None)
+df['safe'] = False
 # are we guaranteed at least two items in every row
 
 def row_is_increasing_safe(arr):
@@ -41,37 +41,114 @@ def row_is_decreasing_safe(arr):
 
 safe = 0
 # iterative solution
-for report in df.values:
+# add a column that determines whether it is safe or unsafe 
+for i, report in enumerate(df.values):
     # report[0] gets the string '38 41 44 47 50 47' out of array
     # report[0].split() will break up the string by whitespace 
     # breakpoint()
     numbers = np.array(report[0].split(), dtype=int)
-    if row_is_decreasing_safe(numbers) or row_is_increasing_safe(numbers):
-        print(numbers, 'safe!')
+    safe_value = row_is_decreasing_safe(numbers) or row_is_increasing_safe(numbers)
+    if safe_value == True:
+    #     print(numbers, 'safe!')
         safe +=1 
-    else:
-        print(numbers, 'NOT safe')
-        print(row_is_decreasing_safe(numbers))
-        print(row_is_increasing_safe(numbers))
+    # else:
+    #     print(numbers, 'NOT safe')
+    #     print(row_is_decreasing_safe(numbers))
+    #     print(row_is_increasing_safe(numbers))
+
+    # breakpoint()
+    df.loc[i, 'safe'] = safe_value
 
 print(f'solution to part 1 is: {safe}')
+print(df)
+# count number of entries that are true in df
+num_safe_entries = (df['safe'] == True).sum()
+print(num_safe_entries)
 
 
 ## PART 2
+# for reports that are unsafe, check if there is a singe
+# entry change that wouldmake it work
+
+# TODO try actually removing the element from the array
+
+unsafe_entries = df['safe'] == False
+print(df[unsafe_entries])
+
+def row_is_inc_fuzzy_safe(arr):
+    low = 0
+    high = 1
+    remove_count = 0
+    while high < len(arr):
+        diff = arr[high] - arr[low]
+
+        if diff > 3:
+            high += 1    
+            remove_count +=1 
+            # its already sorted incresing we are assuming
+            # if the diff already >3, increasing high won't help us 
+            # maybe increase low and high and assume we are dropping low
+
+        elif diff < 1:
+            arr = np.delete(arr, low)
+            remove_count +=1 
+        else: # within valid range, increse both 
+            low +=1 
+            high += 1
+
+        if remove_count > 1:
+            #print(f'arr is NOT fuzzy safe: {arr}')
+            return False
+        
+    return True
 
 
-# def row_is_valid(df):
-#     # get a list from the row data
+def row_is_dec_fuzzy_safe(arr):
+    # print(f'checking {arr}')
+    # check if its increasing by 1 or two
+    remove_count = 0
+    low = 0
+    high = 1
+    diff = arr[low] - arr[high]
+
+    while high < len(arr):
+        if diff > 3:
+            high += 1 
+            remove_count +=1 # decreasing too fast
+        elif diff < 1:
+            remove_count +=1
+            #high +=1
+        else:
+            low += 1 
+            high += 1
+
+        if remove_count > 1:
+            #print(f'arr is NOT fuzzy safe: {arr}')
+            return False
     
-# df['valid'] = df.apply(row_is_valid, axis=1)
+    print(f'arr is fuzzy safe dec: {arr}, remove_count {remove_count}')
+    return True
+   
+#  check the unsafe reports to see if they are almost safe
+for i, report in enumerate(df[unsafe_entries].values):
+    # report[0] gets the string '38 41 44 47 50 47' out of array
+    # report[0].split() will break up the string by whitespace 
+    # breakpoint()
+    safe = 0
+    numbers = np.array(report[0].split(), dtype=int)
 
-# for each row in the df, determine if its valid or not and count total number of valid
-# import pdb; pdb.set_trace()
+    safe_value = row_is_dec_fuzzy_safe(numbers) or row_is_inc_fuzzy_safe(numbers)
+    # if safe_value == True:
+    # #     print(numbers, 'safe!')
+    #     safe +=1 
+    # # else:
+    # #     print(numbers, 'NOT safe')
+    # #     print(row_is_decreasing_safe(numbers))
+    # #     print(row_is_increasing_safe(numbers))
 
-# data = []
-# with open('data/data2.txt', 'r') as file:
-#     for line in file:
-#         # Convert each line to list of integers, skipping any empty lines
-#         if line.strip():
-#             numbers = list(map(int, line.strip().split()))
-#             data.append(numbers)
+    # breakpoint()
+    # update dataframe safe column to include those that are fuzzy safe
+    df.loc[i, 'safe'] = safe_value
+
+num_fuzzy_safe_entries = (df['safe'] == True).sum()
+print(f'Answewr Part 2: {num_fuzzy_safe_entries}')
