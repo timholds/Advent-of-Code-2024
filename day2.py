@@ -10,7 +10,7 @@
 # read in the data from data/data2.txt
 import numpy as np
 import pandas as pd
-df = pd.read_csv('data/test_data2.txt', header=None)
+df = pd.read_csv('data/data2.txt', header=None)
 df['safe'] = False
 # are we guaranteed at least two items in every row
 
@@ -99,7 +99,8 @@ def row_is_inc_fuzzy_safe(arr):
         if remove_count > 1:
             #print(f'arr is NOT fuzzy safe: {arr}')
             return False
-        
+
+    print(f'arr is fuzzy safe inc: {arr}, remove_count {remove_count}')
     return True
 
 
@@ -109,21 +110,47 @@ def row_is_dec_fuzzy_safe(arr):
     remove_count = 0
     low = 0
     high = 1
-    diff = arr[low] - arr[high]
 
     while high < len(arr):
+        diff = arr[low] - arr[high]
+        print(f'low {low}, high {high}, {arr[low]} - {arr[high]} =  diff {diff}')
         if diff > 3:
-            high += 1 
-            remove_count +=1 # decreasing too fast
+            print('diff larger than 3')
+            if high + 1 < len(arr):
+                new_diff = arr[low] - arr[high+1]
+                if new_diff <= 3 and new_diff >= 1: 
+                    print(f'removing item at high {arr[high]}')
+                    remove_count +=1
+                    high += 2
+                    low += 1
+
+                else:
+                    print('dropping 1 does not fix issue')
+                    return False
+            else:
+                remove_count += 1
         elif diff < 1:
-            remove_count +=1
+            print('diff smaller than 1')
+            # try low - 1
+            new_diff = arr[low-1] - arr[high]
+            print(f'low-1 {low-1}, high {high}, {arr[low-1]} - {arr[high]} =  diff {diff} diff {new_diff}')
+            if new_diff <= 3 and new_diff >= 1: 
+                print(f'removing item at low {arr[low]}')
+                remove_count +=1
+                low += 1
+                high += 1
+
+
+            else:
+                print('moving up or down 1 doesnt fix issue')
+                return False
             #high +=1
         else:
             low += 1 
             high += 1
 
         if remove_count > 1:
-            #print(f'arr is NOT fuzzy safe: {arr}')
+            print(f'arr is NOT fuzzy safe: {arr}, remove_count {remove_count}')
             return False
     
     print(f'arr is fuzzy safe dec: {arr}, remove_count {remove_count}')
@@ -134,7 +161,7 @@ for i, report in enumerate(df[unsafe_entries].values):
     # report[0] gets the string '38 41 44 47 50 47' out of array
     # report[0].split() will break up the string by whitespace 
     # breakpoint()
-    safe = 0
+    # safe = 0
     numbers = np.array(report[0].split(), dtype=int)
 
     safe_value = row_is_dec_fuzzy_safe(numbers) or row_is_inc_fuzzy_safe(numbers)
